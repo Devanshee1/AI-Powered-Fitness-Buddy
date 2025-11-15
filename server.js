@@ -5,18 +5,25 @@ import cors from "cors";
 import { sendSMS, sendWorkoutReminder, sendWorkoutComplete, sendDailyMotivation, isValidPhoneNumber } from "./twilioService.js";
 import connectDB from "./config/database.js";
 import authRoutes from "./routes/auth.js";
+import workoutRoutes from "./routes/workout.js";
+import progressRoutes from "./routes/progress.js";
+import notificationRoutes from "./routes/notifications.js";
+import { initializeScheduler } from "./services/notificationScheduler.js";
 
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and initialize scheduler
+connectDB().then(() => {
+  // Initialize notification scheduler after DB connection
+  initializeScheduler();
+});
 
 const app = express();
 
 // 🌱 CORS must come BEFORE other middleware
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
@@ -31,6 +38,15 @@ app.use((req, res, next) => {
 
 // Authentication routes
 app.use('/api/auth', authRoutes);
+
+// Workout routes
+app.use('/api/workouts', workoutRoutes);
+
+// Progress routes
+app.use('/api/progress', progressRoutes);
+
+// Notification settings routes
+app.use('/api/notifications', notificationRoutes);
 
 // Use the latest stable Gemini model
 const GEMINI_MODEL = "gemini-2.5-flash";

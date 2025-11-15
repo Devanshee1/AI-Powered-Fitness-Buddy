@@ -39,7 +39,7 @@ const ProtectedRoute = ({ children }) => {
 
 // Main App Component
 const FitnessBuddy = () => {
-  const { user, isAuthenticated, login, signup, logout } = useAuth();
+  const { user, isAuthenticated, login, signup, logout, token } = useAuth();
   const [todaySteps, setTodaySteps] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [currentWorkout, setCurrentWorkout] = useState(null);
@@ -282,20 +282,67 @@ const FitnessBuddy = () => {
     navigate("/workout");
   };
 
-  const completeWorkout = () => {
-    const completed = {
-      ...currentWorkout,
-      date: new Date().toISOString(),
-      completed: true,
-    };
-    setWorkoutHistory([completed, ...workoutHistory]);
-    setCurrentWorkout(null);
-    navigate("/");
-    showTempNotification("Workout Complete! Great job!");
+  const completeWorkout = async () => {
+    if (!currentWorkout || !token) return;
+
+    try {
+      const response = await fetch('http://localhost:5001/api/workouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: currentWorkout.name,
+          type: currentWorkout.type,
+          duration: currentWorkout.duration,
+          calories: currentWorkout.calories,
+          exercises: currentWorkout.exercises || [],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Workout saved and notification sent automatically!
+        setCurrentWorkout(null);
+        navigate("/");
+        showTempNotification("Workout Complete! Great job!");
+      } else {
+        console.error('Error saving workout:', data.error);
+        showTempNotification("Workout completed but failed to save");
+        navigate("/");
+      }
+    } catch (error) {
+      console.error('Failed to save workout:', error);
+      showTempNotification("Workout completed but failed to save");
+      navigate("/");
+    }
   };
 
-  const addSteps = (steps) => {
-    setTodaySteps((prev) => Math.min(prev + steps, 20000));
+  const addSteps = async (steps) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5001/api/progress/steps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ steps }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTodaySteps(data.progress.steps);
+      }
+    } catch (error) {
+      console.error('Failed to add steps:', error);
+      // Fallback to local state
+      setTodaySteps((prev) => Math.min(prev + steps, 20000));
+    }
   };
 
   const generateAIWorkouts = async () => {

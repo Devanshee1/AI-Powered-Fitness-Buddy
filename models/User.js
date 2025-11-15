@@ -56,7 +56,35 @@ const userSchema = new mongoose.Schema(
     },
     phoneNumber: {
       type: String,
-      default: null,
+      required: [true, 'Phone number is required for notifications'],
+      match: [/^\+?[1-9]\d{1,14}$/, 'Please provide a valid phone number in E.164 format (e.g., +1234567890)'],
+    },
+    // Notification Preferences
+    notificationSettings: {
+      workoutReminder: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        time: {
+          type: String, // Format: "HH:MM" (24-hour format)
+          default: '09:00',
+        },
+        days: {
+          type: [Number], // 0=Sunday, 1=Monday, ..., 6=Saturday
+          default: [1, 2, 3, 4, 5], // Monday-Friday
+        },
+      },
+      dailyMotivation: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        time: {
+          type: String, // Format: "HH:MM" (24-hour format)
+          default: '08:00',
+        },
+      },
     },
     joinDate: {
       type: Date,

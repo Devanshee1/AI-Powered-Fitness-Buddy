@@ -16,6 +16,7 @@ const Signup = ({ onSignup }) => {
     fitnessLevel: "beginner",
     goal: "weight_loss",
     equipment: [],
+    phoneNumber: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,8 +49,13 @@ const Signup = ({ onSignup }) => {
 
     // Validate step 2
     if (step === 2) {
-      if (!formData.age || !formData.weight || !formData.height) {
+      if (!formData.age || !formData.weight || !formData.height || !formData.phoneNumber) {
         setError("Please fill in all required fields");
+        return;
+      }
+      // Validate phone number format (basic check)
+      if (!formData.phoneNumber.match(/^\+?[1-9]\d{1,14}$/)) {
+        setError("Please enter a valid phone number in E.164 format (e.g., +1234567890)");
         return;
       }
     }
@@ -288,6 +294,24 @@ const Signup = ({ onSignup }) => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  placeholder="+1234567890"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Used for workout notifications (E.164 format: +country code + number)
+                </p>
               </div>
             </div>
           )}

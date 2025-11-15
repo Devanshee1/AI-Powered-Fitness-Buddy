@@ -37,8 +37,8 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no explanation, no extra tex
 
     // Remove Markdown-style JSON wrappers
     const cleanContent = content
-      .replace(/json\n?/g, "")
-      .replace(/\n?/g, "")
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
       .trim();
 
     // Parse JSON safely
@@ -49,7 +49,7 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no explanation, no extra tex
       console.error("❌ JSON Parse Error:", e, "\nResponse was:", cleanContent);
       
       // Try to extract JSON from text if parsing fails
-      const jsonMatch = cleanContent.match(/\{[\s\S]"workouts"[\s\S]\}/);
+      const jsonMatch = cleanContent.match(/\{[\s\S]*"workouts"[\s\S]*\}/);
       if (jsonMatch) {
         try {
           workouts = JSON.parse(jsonMatch[0]);
@@ -102,8 +102,8 @@ Give concise, practical advice in 3-5 short paragraphs. Be encouraging and speci
     
     // Clean up the response - remove excessive formatting
     reply = reply
-      .replace(/\\\*/g, '') // Remove triple asterisks
-      .replace(/\\/g, '') // Remove double asterisks (bold)
+      .replace(/\*\*\*/g, '') // Remove triple asterisks
+      .replace(/\*\*/g, '') // Remove double asterisks (bold)
       .replace(/###\s*/g, '') // Remove heading markers
       .replace(/---+/g, '') // Remove horizontal rules
       .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double
