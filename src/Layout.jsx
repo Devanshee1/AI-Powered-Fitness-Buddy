@@ -1,9 +1,18 @@
-import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { Dumbbell, Bell, Settings, Home, Activity, TrendingUp, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Dumbbell, Bell, Settings, Home, Activity, TrendingUp, User, LogOut } from 'lucide-react';
 
-// We pass the user object to the layout to display the name
-const Layout = ({ user }) => {
+// We pass the user object and logout function to the layout
+const Layout = ({ user, onLogout }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    navigate('/login');
+  };
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header (from App.jsx) */}
@@ -18,13 +27,31 @@ const Layout = ({ user }) => {
               <p className="text-xs text-gray-500">Hello, {user?.name}!</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <NavLink to="/notifications" className="p-2 hover:bg-gray-100 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
+            </NavLink>
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

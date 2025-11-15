@@ -1,218 +1,45 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
-import { Activity, Award, Dumbbell, Flame } from "lucide-react";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { Award } from "lucide-react";
 import { generateWorkout, getAICoachAdvice } from "./services/aiService";
+import { useAuth } from "./context/AuthContext";
 
-// Import the new components
-import Layout from "./Layout"; // The main layout (Header + Nav)
+// Import components
+import Layout from "./Layout";
 import Dashboard from "./pages/Dashboard";
 import Progress from "./pages/Progress";
 import ActivityPage from "./pages/Activity";
 import ProfilePage from "./pages/Profile";
 import Workout from "./pages/Workout";
+import Notifications from "./pages/Notifications";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
-// Onboarding Component (extracted from the old App.jsx logic)
-const Onboarding = ({ onComplete }) => {
-  const [onboardingStep, setOnboardingStep] = useState(0);
-  const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    weight: "",
-    height: "",
-    gender: "male",
-    fitnessLevel: "beginner",
-    goal: "weight_loss",
-    equipment: [],
-  });
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
 
-  const handleOnboardingNext = () => {
-    if (onboardingStep < 2) {
-      setOnboardingStep(onboardingStep + 1);
-    } else {
-      const newUser = { ...formData, joinDate: new Date().toISOString() };
-      onComplete(newUser); // Pass the new user up to App.jsx
-    }
-  };
-
-  // The JSX for Onboarding is the same as before
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Dumbbell className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            AI Fitness Buddy
-          </h1>
-          <p className="text-gray-600">Your personal workout companion</p>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-
-        <div className="mb-6">
-          <div className="flex justify-between mb-2">
-            {[0, 1, 2].map((step) => (
-              <div
-                key={step}
-                className={`h-2 flex-1 mx-1 rounded-full ${
-                  step <= onboardingStep ? "bg-blue-500" : "bg-gray-200"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {onboardingStep === 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Basic Information
-            </h2>
-            <input
-              type="text"
-              placeholder="Your Name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                placeholder="Age"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.age}
-                onChange={(e) =>
-                  setFormData({ ...formData, age: e.target.value })
-                }
-              />
-              <select
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.gender}
-                onChange={(e) =>
-                  setFormData({ ...formData, gender: e.target.value })
-                }
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                placeholder="Weight (kg)"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.weight}
-                onChange={(e) =>
-                  setFormData({ ...formData, weight: e.target.value })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Height (cm)"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.height}
-                onChange={(e) =>
-                  setFormData({ ...formData, height: e.target.value })
-                }
-              />
-            </div>
-          </div>
-        )}
-
-        {onboardingStep === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Fitness Profile
-            </h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fitness Level
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {["beginner", "intermediate", "advanced"].map((level) => (
-                  <button
-                    key={level}
-                    onClick={() =>
-                      setFormData({ ...formData, fitnessLevel: level })
-                    }
-                    className={`py-3 px-4 rounded-lg border-2 capitalize ${
-                      formData.fitnessLevel === level
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-600"
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary Goal
-              </label>
-              <div className="space-y-2">
-                {[
-                  { value: "weight_loss", label: "Weight Loss", icon: "🔥" },
-                  { value: "muscle_gain", label: "Muscle Gain", icon: "💪" },
-                  { value: "endurance", label: "Endurance", icon: "🏃" },
-                ].map((goal) => (
-                  <button
-                    key={goal.value}
-                    onClick={() =>
-                      setFormData({ ...formData, goal: goal.value })
-                    }
-                    className={`w-full py-3 px-4 rounded-lg border-2 flex items-center ${
-                      formData.goal === goal.value
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-600"
-                    }`}
-                  >
-                    <span className="text-2xl mr-3">{goal.icon}</span>
-                    <span className="font-medium">{goal.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {onboardingStep === 2 && (
-          <div className="text-center space-y-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto">
-              <Award className="w-12 h-12 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">All Set!</h2>
-            <p className="text-gray-600">
-              Your personalized fitness plan is ready. Let's start your journey
-              to a healthier you!
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={handleOnboardingNext}
-          disabled={
-            onboardingStep === 0 &&
-            (!formData.name ||
-              !formData.age ||
-              !formData.weight ||
-              !formData.height)
-          }
-          className="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {onboardingStep === 2 ? "Start My Journey" : "Continue"}
-        </button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
-// Main App Component: Now manages state and routing
+// Main App Component
 const FitnessBuddy = () => {
-  // All state is kept here, in the top-level component
-  const [user, setUser] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const { user, isAuthenticated, login, signup, logout } = useAuth();
   const [todaySteps, setTodaySteps] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [currentWorkout, setCurrentWorkout] = useState(null);
@@ -224,9 +51,9 @@ const FitnessBuddy = () => {
   const [coachQuestion, setCoachQuestion] = useState("");
   const [coachResponse, setCoachResponse] = useState("");
 
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate();
 
-  // Workout database (remains the same)
+  // Workout database
   const workoutDatabase = {
     beginner: {
       weight_loss: [
@@ -419,55 +246,42 @@ const FitnessBuddy = () => {
     },
   };
 
-  // Effects for loading/saving data (remains the same)
+  // Load data from localStorage
   useEffect(() => {
-    const savedUser = localStorage.getItem("fitnessUser");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setShowOnboarding(false);
-
+    if (isAuthenticated) {
       const savedSteps = localStorage.getItem("todaySteps");
       if (savedSteps) setTodaySteps(parseInt(savedSteps));
 
       const savedHistory = localStorage.getItem("workoutHistory");
       if (savedHistory) setWorkoutHistory(JSON.parse(savedHistory));
     }
-  }, []);
+  }, [isAuthenticated]);
 
+  // Save data to localStorage
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("fitnessUser", JSON.stringify(user));
+    if (isAuthenticated && user) {
       localStorage.setItem("todaySteps", todaySteps.toString());
       localStorage.setItem("workoutHistory", JSON.stringify(workoutHistory));
     }
-  }, [user, todaySteps, workoutHistory]);
+  }, [isAuthenticated, user, todaySteps, workoutHistory]);
 
-  // Helper to show notifications
+  // Helper functions
   const showTempNotification = (text) => {
     setNotificationText(text);
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 3000);
   };
 
-  // All helper functions are also kept here
-  const handleOnboardingComplete = (newUser) => {
-    setUser(newUser);
-    setShowOnboarding(false);
-    showTempNotification("Welcome! Your journey starts now!");
-  };
-
   const getRecommendedWorkouts = () => {
     if (!user) return [];
-    return workoutDatabase[user.fitnessLevel][user.goal] || [];
+    return workoutDatabase[user.fitnessLevel]?.[user.goal] || [];
   };
 
-  // **UPDATED with navigate**
   const startWorkout = (workout) => {
     setCurrentWorkout(workout);
-    navigate("/workout"); // Navigate to the workout page
+    navigate("/workout");
   };
 
-  // **UPDATED with navigate**
   const completeWorkout = () => {
     const completed = {
       ...currentWorkout,
@@ -476,7 +290,7 @@ const FitnessBuddy = () => {
     };
     setWorkoutHistory([completed, ...workoutHistory]);
     setCurrentWorkout(null);
-    navigate("/"); // Navigate back to the dashboard
+    navigate("/");
     showTempNotification("Workout Complete! Great job!");
   };
 
@@ -500,7 +314,7 @@ const FitnessBuddy = () => {
   const askAICoach = async () => {
     if (!coachQuestion.trim()) return;
     setIsGenerating(true);
-    setCoachResponse(""); // Clear previous response
+    setCoachResponse("");
     try {
       const response = await getAICoachAdvice(coachQuestion, user);
       setCoachResponse(response);
@@ -511,7 +325,7 @@ const FitnessBuddy = () => {
     setIsGenerating(false);
   };
 
-  // Data calculations (remains the same)
+  // Data calculations
   const totalCalories = workoutHistory.reduce((sum, w) => sum + w.calories, 0);
   const weeklyWorkouts = workoutHistory.filter((w) => {
     const date = new Date(w.date);
@@ -529,15 +343,9 @@ const FitnessBuddy = () => {
     },
   ];
 
-  // Onboarding logic
-  if (showOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
-  }
-
-  // Main App Router
   return (
     <>
-      {/* Notification (Global) */}
+      {/* Global Notification */}
       {showNotification && (
         <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
           <div className="flex items-center">
@@ -547,89 +355,110 @@ const FitnessBuddy = () => {
         </div>
       )}
 
-      {/* AI Coach Modal (Global) */}
-      <button
-        onClick={() => setShowAICoach(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all hover:scale-110 flex items-center justify-center z-40"
-        title="Ask AI Fitness Coach"
-      >
-        <span className="text-2xl">🤖</span>
-      </button>
+      {/* AI Coach Modal */}
+      {isAuthenticated && (
+        <>
+          <button
+            onClick={() => setShowAICoach(true)}
+            className="fixed bottom-24 right-6 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all hover:scale-110 flex items-center justify-center z-40"
+            title="Ask AI Fitness Coach"
+          >
+            <span className="text-2xl">🤖</span>
+          </button>
 
-      {showAICoach && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                <span className="mr-2">🤖</span>
-                AI Fitness Coach
-              </h2>
-              <button
-                onClick={() => {
-                  setShowAICoach(false);
-                  setCoachQuestion("");
-                  setCoachResponse("");
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-600 mb-4">
-              Ask me anything about fitness, nutrition, workouts, or health!
-            </p>
-
-            <textarea
-              value={coachQuestion}
-              onChange={(e) => setCoachQuestion(e.target.value)}
-              placeholder="Example: What should I eat before a workout? How can I improve my running endurance?"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4 resize-none"
-              rows="4"
-            />
-
-            <button
-              onClick={askAICoach}
-              disabled={isGenerating || !coachQuestion.trim()}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <span className="flex items-center justify-center">
-                  <span className="animate-spin mr-2">⚡</span>
-                  AI is thinking...
-                </span>
-              ) : (
-                "Ask AI Coach"
-              )}
-            </button>
-
-            {coachResponse && (
-              <div className="mt-6 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                <div className="flex items-start">
-                  <span className="text-2xl mr-3">💡</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 mb-2">
-                      Coach's Advice:
-                    </h3>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {coachResponse}
-                    </p>
-                  </div>
+          {showAICoach && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                    <span className="mr-2">🤖</span>
+                    AI Fitness Coach
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowAICoach(false);
+                      setCoachQuestion("");
+                      setCoachResponse("");
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ✕
+                  </button>
                 </div>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Ask me anything about fitness, nutrition, workouts, or health!
+                </p>
+
+                <textarea
+                  value={coachQuestion}
+                  onChange={(e) => setCoachQuestion(e.target.value)}
+                  placeholder="Example: What should I eat before a workout?"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4 resize-none"
+                  rows="4"
+                />
+
+                <button
+                  onClick={askAICoach}
+                  disabled={isGenerating || !coachQuestion.trim()}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <span className="flex items-center justify-center">
+                      <span className="animate-spin mr-2">⚡</span>
+                      AI is thinking...
+                    </span>
+                  ) : (
+                    "Ask AI Coach"
+                  )}
+                </button>
+
+                {coachResponse && (
+                  <div className="mt-6 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                    <div className="flex items-start">
+                      <span className="text-2xl mr-3">💡</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800 mb-2">
+                          Coach's Advice:
+                        </h3>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {coachResponse}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* This is the main router. 
-        The Layout route wraps all main pages to give them the header and nav bar.
-        The Workout route is separate, so it doesn't have the bottom nav bar.
-      */}
+      {/* Routes */}
       <Routes>
-        {/* All main pages are children of the Layout */}
-        <Route path="/" element={<Layout user={user} />}>
-          {/* The 'index' route is the default page for "/" */}
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={login} />
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? <Navigate to="/" replace /> : <Signup onSignup={signup} />
+          }
+        />
+
+        {/* Protected Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout user={user} onLogout={logout} />
+            </ProtectedRoute>
+          }
+        >
           <Route
             index
             element={
@@ -647,13 +476,10 @@ const FitnessBuddy = () => {
               />
             }
           />
-
-          {/* Page for Feature 3: Progress Visualization */}
           <Route
             path="progress"
             element={<Progress workoutHistory={workoutHistory} />}
           />
-
           <Route
             path="activity"
             element={
@@ -663,8 +489,6 @@ const FitnessBuddy = () => {
               />
             }
           />
-
-          {/* ⭐⭐ THIS IS THE UPDATED LINE ⭐⭐ */}
           <Route
             path="profile"
             element={
@@ -675,16 +499,22 @@ const FitnessBuddy = () => {
               />
             }
           />
+          <Route
+            path="notifications"
+            element={<Notifications userProfile={user} />}
+          />
         </Route>
 
-        {/* The Workout page is a separate route without the main layout */}
+        {/* Workout page - separate from main layout */}
         <Route
           path="/workout"
           element={
-            <Workout
-              currentWorkout={currentWorkout}
-              completeWorkout={completeWorkout}
-            />
+            <ProtectedRoute>
+              <Workout
+                currentWorkout={currentWorkout}
+                completeWorkout={completeWorkout}
+              />
+            </ProtectedRoute>
           }
         />
       </Routes>
